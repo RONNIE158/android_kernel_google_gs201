@@ -87,7 +87,8 @@ jobs:
        cd kernel
        # Setup defconfig
        make O=out ARCH=arm64 gki_defconfig
-       scripts/config --file out/.config -e IKHEADERS
+       scripts/config --file out/.config --disable IKHEADERS
+       scripts/config --file out/.config --disable KALLSYMS
        yes "" | make O=out ARCH=arm64 olddefconfig
 
        # Build with verbose logging
