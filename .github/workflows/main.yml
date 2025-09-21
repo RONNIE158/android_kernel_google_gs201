@@ -158,7 +158,6 @@ jobs:
          CROSS_COMPILE_ARM32=arm-linux-androideabi- \
          LD=ld.lld \
          LLVM=1 LLVM_IAS=1 \
-         V=1 \
          Image.lz4 dtbs modules |& tee build.log    
 
     - name: Verify Lindroid DRM Build
