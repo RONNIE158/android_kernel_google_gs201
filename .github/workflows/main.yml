@@ -102,6 +102,12 @@ jobs:
        which aarch64-linux-android-gcc
        aarch64-linux-android-gcc --version
 
+    - name: Apply temporary kernel patch
+      run: |
+        cd kernel  # masuk ke root kernel tree
+        git apply ../patch/disable_shrinker_rwsem.patch
+
+
 
     #- name: Checkout Lindroid DRM Loopback
       #uses: actions/checkout@v3
