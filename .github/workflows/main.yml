@@ -48,6 +48,11 @@ jobs:
         echo "${{ github.workspace }}/gcc64/bin" >> $GITHUB_PATH
         echo "${{ github.workspace }}/gcc32/bin" >> $GITHUB_PATH
 
+    - name: Ensure Clang r416183b is used
+      run: |
+        which clang
+        clang --version   
+
 
     - name: Checkout Lindroid DRM Loopback
       uses: actions/checkout@v3
@@ -80,6 +85,7 @@ jobs:
        cd kernel
        # Setup defconfig
        make O=out ARCH=arm64 gki_defconfig
+       scripts/config --file out/.config -e IKHEADERS
        yes "" | make O=out ARCH=arm64 olddefconfig
 
        # Build with verbose logging
