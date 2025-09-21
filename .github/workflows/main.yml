@@ -152,10 +152,9 @@ jobs:
        make O=out ARCH=arm64 modules_prepare
 
        # Build with verbose logging
-       make -j$(nproc) O=out ARCH=arm64 \
+       make O=out ARCH=arm64 \
          CC=clang \
          CROSS_COMPILE=aarch64-linux-android- \
-         CROSS_COMPILE_ARM32=arm-linux-androideabi- \
          LD=ld.lld \
          LLVM=1 LLVM_IAS=1 \
          Image.lz4 dtbs modules |& tee build.log    
