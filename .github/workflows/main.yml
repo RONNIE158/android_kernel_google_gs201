@@ -87,8 +87,52 @@ jobs:
        cd kernel
        # Setup defconfig
        make O=out ARCH=arm64 gki_defconfig
+       # Fix configs
        scripts/config --file out/.config --disable IKHEADERS
+       scripts/config --file out/.config --disable IKHEADERS_PROC
        scripts/config --file out/.config --disable KALLSYMS
+       scripts/config --file out/.config --disable KALLSYMS_ALL
+       # Enable LXC support
+       scripts/config --file out/.config -e NAMESPACES
+       scripts/config --file out/.config -e UTS_NS
+       scripts/config --file out/.config -e IPC_NS
+       scripts/config --file out/.config -e USER_NS
+       scripts/config --file out/.config -e PID_NS
+       scripts/config --file out/.config -e NET_NS
+
+       scripts/config --file out/.config -e CGROUPS
+       scripts/config --file out/.config -e CGROUP_SCHED
+       scripts/config --file out/.config -e CGROUP_FREEZER
+       scripts/config --file out/.config -e CGROUP_DEVICE
+       scripts/config --file out/.config -e CPUSETS
+       scripts/config --file out/.config -e CGROUP_CPUACCT
+       scripts/config --file out/.config -e MEMCG
+       scripts/config --file out/.config -e MEMCG_SWAP
+       scripts/config --file out/.config -e CGROUP_PERF
+       scripts/config --file out/.config -e CGROUP_PIDS
+       scripts/config --file out/.config -e CGROUP_BPF
+
+       scripts/config --file out/.config -e KEYS
+       scripts/config --file out/.config -e SECCOMP
+       scripts/config --file out/.config -e SECCOMP_FILTER
+       scripts/config --file out/.config -e SECURITY
+       scripts/config --file out/.config -e SECURITYFS
+
+       scripts/config --file out/.config -e PROC_FS
+       scripts/config --file out/.config -e SYSFS
+       scripts/config --file out/.config -e TMPFS
+       scripts/config --file out/.config -e TMPFS_POSIX_ACL
+       scripts/config --file out/.config -e DEVPTS_MULTIPLE_INSTANCES
+       scripts/config --file out/.config -e OVERLAY_FS
+
+       scripts/config --file out/.config -e VETH
+       scripts/config --file out/.config -e BRIDGE
+       scripts/config --file out/.config -e NETFILTER
+       scripts/config --file out/.config -e NF_NAT
+       scripts/config --file out/.config -e IP_NF_IPTABLES
+       scripts/config --file out/.config -e IP_NF_TARGET_MASQUERADE
+
+       # Apply config changes
        yes "" | make O=out ARCH=arm64 olddefconfig
 
        # Build with verbose logging
