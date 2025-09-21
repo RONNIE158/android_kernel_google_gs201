@@ -7,12 +7,18 @@ jobs:
   build-gki:
     runs-on: ubuntu-latest
     env:
+      PATH: ${{ github.workspace }}/clang/bin:${{ github.workspace }}/gcc64/bin:${{ github.workspace }}/gcc32/bin:/usr/bin
       DEVICE: pantah
       KERNEL_REPO: RONNIE158/android_kernel_google_gs201
       KERNEL_BRANCH: 13.0.0-sultan
       PATCH_REPO: Linux-on-droid/lindroid-drm-loopback
-      CLANG_VERSION: r416183b
-      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CC: clang
+      CXX: clang++
+      LD: ld.lld
+      LLVM: 1
+      LLVM_IAS: 1
+      CROSS_COMPILE: aarch64-linux-android-
+      CROSS_COMPILE_ARM32: arm-linux-androideabi-
 
     steps:
     - name: Checkout Kernel
