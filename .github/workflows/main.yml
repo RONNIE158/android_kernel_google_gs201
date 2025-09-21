@@ -36,22 +36,17 @@ jobs:
           coreutils device-tree-compiler \
           clang llvm
 
-    - name: Set up LineageOS Clang
+    - name: Set up LineageOS Clang 14
       run: |
-       git clone --depth=1 https://github.com/LineageOS/android_prebuilts_clang_kernel_linux-x86_clang-${CLANG_VERSION} clang
-       echo "${{ github.workspace }}/clang/bin" >> $GITHUB_PATH
-       echo "CC=clang" >> $GITHUB_ENV
-       echo "CXX=clang++" >> $GITHUB_ENV
-       echo "LD=ld.lld" >> $GITHUB_ENV
+        git clone --depth=1 https://github.com/LineageOS/android_prebuilts_clang_kernel_linux-x86_clang-r416183b clang
+        echo "${{ github.workspace }}/clang/bin" >> $GITHUB_PATH
 
-    - name: Set up GCC prebuilts
+    - name: Set up LineageOS GCC Toolchains
       run: |
-       git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9 aarch64-gcc
-       git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9 arm-gcc
-       echo "${{ github.workspace }}/aarch64-gcc/bin" >> $GITHUB_PATH
-       echo "${{ github.workspace }}/arm-gcc/bin" >> $GITHUB_PATH
-
-
+        git clone --depth=1 https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9 gcc64
+        git clone --depth=1 https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_arm_arm-linux-androideabi-4.9 gcc32
+        echo "${{ github.workspace }}/gcc64/bin" >> $GITHUB_PATH
+        echo "${{ github.workspace }}/gcc32/bin" >> $GITHUB_PATH
 
 
     - name: Checkout Lindroid DRM Loopback
@@ -70,9 +65,10 @@ jobs:
         # Copy source lindroid-drm ke tree kernel
         cp -r ../drm-dkms drivers/lindroid-drm
 
-    - name: Build Kernel GKI
+    - name: Build Kernel GKI 5.10
       env:
-        PATH: ${{ github.workspace }}/clang/bin:${{ github.workspace }}/aarch64-gcc/bin:${{ github.workspace }}/arm-gcc/bin:/usr/bin:$PATH
+        PATH: ${{ github.workspace }}/clang/bin:${{ github.workspace }}/gcc64/bin:${{ github.workspace }}/gcc32/bin:/usr/bin:$PATH
+        ARCH: arm64
         CC: clang
         CXX: clang++
         LD: ld.lld
@@ -80,16 +76,21 @@ jobs:
         LLVM_IAS: 1
         CROSS_COMPILE: aarch64-linux-android-
         CROSS_COMPILE_ARM32: arm-linux-androideabi-
-        ARCH: arm64
-        CCACHE_DIR: ${{ env.CCACHE_DIR }}
-
       run: |
-        cd kernel
-        make O=out ARCH=arm64 gki_defconfig
-        yes "" | make O=out ARCH=arm64 olddefconfig
+       cd kernel
+       # Setup defconfig
+       make O=out ARCH=arm64 gki_defconfig
+       yes "" | make O=out ARCH=arm64 olddefconfig
 
-        make -j$(nproc) O=out ARCH=arm64 \
-          Image.lz4 dtbs modules | tee build.log| tee build.log
+       # Build with verbose logging
+       make -j$(nproc) O=out ARCH=arm64 \
+         CC=clang \
+         CROSS_COMPILE=aarch64-linux-android- \
+         CROSS_COMPILE_ARM32=arm-linux-androideabi- \
+         LD=ld.lld \
+         LLVM=1 LLVM_IAS=1 \
+         V=1 \
+         Image.lz4 dtbs modules |& tee build.log
 
     - name: Verify Lindroid DRM Build
       run: |
