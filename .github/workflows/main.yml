@@ -28,6 +28,10 @@ jobs:
         repository: ${{ env.KERNEL_REPO }}
         ref: ${{ env.KERNEL_BRANCH }}
         path: kernel
+
+    - name: Apply temporary kernel patch
+      working-directory: kernel  # masuk ke kernel tree yang benar
+      run: git apply ../patch/disable_shrinker_rwsem.patch   
   
     - name: Install Dependencies
       run: |
@@ -101,10 +105,6 @@ jobs:
        clang --version
        which aarch64-linux-android-gcc
        aarch64-linux-android-gcc --version
-
-    - name: Apply temporary kernel patch
-      working-directory: kernel
-      run: git apply ../patch/disable_shrinker_rwsem.patch
 
 
 
