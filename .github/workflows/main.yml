@@ -15,6 +15,30 @@ jobs:
       CCACHE_DIR: ${{ github.workspace }}/.ccache
 
     steps:
+    - name: Maximize Build Space
+      uses: AdityaGarg8/remove-unwanted-software@v5
+      with:
+        remove-dotnet: 'true'          # Frees ~2 GB
+        remove-android: 'true'         # Frees ~9 GB
+        remove-haskell: 'true'         # Frees ~5.2 GB
+        remove-codeql: 'true'          # Frees ~5.4 GB
+        remove-docker-images: 'true'   # Frees ~3.2 GB
+        remove-large-packages: 'true'  # Frees ~3.1 GB
+        remove-swapfile: 'true'        # Frees ~4 GB
+        remove-cached-tools: 'false'   # Avoid unless confirmed safe
+        verbose: 'true'       
+      
+    - name: Install ccache
+      run: sudo apt update && sudo apt install -y ccache
+
+    - name: Set up ccache
+      run: |
+        mkdir -p ~/.cache/bazel
+        ccache --version
+        ccache --max-size=2G
+        ccache --set-config=compression=true
+        echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
+  
     - name: Checkout Kernel
       uses: actions/checkout@v3
       with:
