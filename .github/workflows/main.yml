@@ -112,10 +112,6 @@ jobs:
     - name: Patch Kernel for Lindroid DRM
       run: |
         cd kernel
-        # Pastikan tree bersih dulu
-        make ARCH=arm64 mrproper || true
-        rm -rf out
-
         # Tambah ke drivers/Makefile
         echo 'obj-y += lindroid-drm/' >> drivers/Makefile
         # Tambah ke drivers/Kconfig
