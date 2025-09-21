@@ -35,7 +35,8 @@ jobs:
           libelf-dev dwarves \
           coreutils device-tree-compiler \
           clang llvm \
-          lz4 xz-utils zstd
+          lz4 xz-utils zstd \
+          pip3 mkdtimg
 
     - name: Set up LineageOS Clang 14
       run: |
