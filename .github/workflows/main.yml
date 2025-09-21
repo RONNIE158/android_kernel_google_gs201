@@ -7,6 +7,7 @@ jobs:
   build-gki:
     runs-on: ubuntu-latest
     env:
+      CCACHE_COMPILERCHECK: "%compiler% -dumpmachine; %compiler% -dumpversion"
       PATH: ${{ github.workspace }}/clang/bin:${{ github.workspace }}/gcc64/bin:${{ github.workspace }}/gcc32/bin:/usr/bin
       DEVICE: pantah
       KERNEL_REPO: RONNIE158/android_kernel_google_gs201
@@ -68,10 +69,27 @@ jobs:
         #echo "${{ github.workspace }}/gcc64/bin" >> $GITHUB_PATH
         #echo "${{ github.workspace }}/gcc32/bin" >> $GITHUB_PATH
 
-    - name: Ensure Clang is used
+    - name: Setup CCACHE for LineageOS Clang/GCC
       run: |
-        which clang
-        clang --version   
+       # Pastikan folder .ccache ada
+       mkdir -p ${{ github.workspace }}/.ccache
+
+       # Set environment variables ccache
+       export CCACHE_DIR=${{ github.workspace }}/.ccache
+       export CCACHE_COMPILERCHECK="%compiler% -dumpmachine; %compiler% -dumpversion"
+       export CCACHE_BASEDIR=${{ github.workspace }}
+       export CCACHE_NOHASHDIR=1
+
+       # Tambahkan ccache ke PATH
+       echo "${{ github.workspace }}/clang/bin" >> $GITHUB_PATH
+       echo "${{ github.workspace }}/gcc64/bin" >> $GITHUB_PATH
+       echo "${{ github.workspace }}/gcc32/bin" >> $GITHUB_PATH
+
+       # Test compiler
+       which clang
+       clang --version
+       which aarch64-linux-android-gcc
+       aarch64-linux-android-gcc --version
 
 
     - name: Checkout Lindroid DRM Loopback
