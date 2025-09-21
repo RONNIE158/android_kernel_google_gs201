@@ -34,7 +34,8 @@ jobs:
           git curl wget unzip \
           libelf-dev dwarves \
           coreutils device-tree-compiler \
-          clang llvm
+          clang llvm \
+          lz4 xz-utils zstd
 
     - name: Set up LineageOS Clang 14
       run: |
