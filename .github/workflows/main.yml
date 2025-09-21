@@ -36,7 +36,7 @@ jobs:
           coreutils device-tree-compiler \
           clang llvm \
           lz4 xz-utils zstd \
-          pip3 mkdtimg
+          android-sdk-libsparse-utils
 
     - name: Set up LineageOS Clang 14
       run: |
