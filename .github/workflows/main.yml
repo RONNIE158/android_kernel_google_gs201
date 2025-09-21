@@ -103,9 +103,8 @@ jobs:
        aarch64-linux-android-gcc --version
 
     - name: Apply temporary kernel patch
-      run: |
-        cd kernel  # masuk ke root kernel tree
-        git apply ../patch/disable_shrinker_rwsem.patch
+      working-directory: kernel
+      run: git apply ../patch/disable_shrinker_rwsem.patch
 
 
 
