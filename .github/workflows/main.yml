@@ -29,7 +29,6 @@ jobs:
           bc bison build-essential flex lld \
           libssl-dev libncurses5-dev libncursesw5-dev \
           python3 python3-pip rsync ccache zip \
-          gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi \
           binutils-aarch64-linux-gnu binutils-arm-linux-gnueabi \
           git curl wget unzip \
           libelf-dev dwarves \
@@ -160,15 +159,7 @@ jobs:
          LD=ld.lld \
          LLVM=1 LLVM_IAS=1 \
          V=1 \
-         Image.lz4 dtbs modules |& tee build.log
-
-    - name: Build DTBO
-      run: |
-        git clone https://android.googlesource.com/platform/system/libufdt tools/libufdt
-        cd tools/libufdt
-        gcc -o mkdtimg mkdtimg.c utils.c -Iinclude
-        cd ../..
-        ./tools/libufdt/mkdtimg create out/arch/arm64/boot/dtbo.img --page_size=4096 out/arch/arm64/boot/dts/google/*.dtbo    
+         Image.lz4 dtbs modules |& tee build.log    
 
     - name: Verify Lindroid DRM Build
       run: |
