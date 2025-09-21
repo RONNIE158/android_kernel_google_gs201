@@ -173,6 +173,9 @@ jobs:
        # Apply config changes
        yes "" | make O=out ARCH=arm64 olddefconfig
 
+       # Make modules_prepare
+       make O=out ARCH=arm64 modules_prepare
+
        # Build with verbose logging
        make -j$(nproc) O=out ARCH=arm64 \
          CC=clang \
