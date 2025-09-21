@@ -90,8 +90,10 @@ jobs:
         CROSS_COMPILE_ARM32: arm-linux-androideabi-
       run: |
        cd kernel
-       # Setup defconfig
-       make O=out ARCH=arm64 gki_defconfig
+        make ARCH=arm64 mrproper || true
+        rm -rf out
+        mkdir out
+        make O=out ARCH=arm64 gki_defconfig
        # Fix configs
        scripts/config --file out/.config --disable IKHEADERS
        scripts/config --file out/.config --disable IKHEADERS_PROC
