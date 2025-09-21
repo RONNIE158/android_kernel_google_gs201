@@ -1,0 +1,23 @@
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -247,11 +247,15 @@
+-        down_write(&shrinker_rwsem);
++        // down_write(&shrinker_rwsem);
+@@ -264,7 +268,11 @@
+-        up_write(&shrinker_rwsem);
++        // up_write(&shrinker_rwsem);
+@@ -274,7 +282,11 @@
+-        down_write(&shrinker_rwsem);
++        // down_write(&shrinker_rwsem);
+@@ -277,7 +289,11 @@
+-        up_write(&shrinker_rwsem);
++        // up_write(&shrinker_rwsem);
+@@ -607,7 +623,11 @@
+-        if (!down_read_trylock(&shrinker_rwsem))
++        // if (!down_read_trylock(&shrinker_rwsem))
+@@ -662,7 +682,11 @@
+-                if (rwsem_is_contended(&shrinker_rwsem)) {
++                // if (rwsem_is_contended(&shrinker_rwsem)) {
+@@ -668,7 +692,11 @@
+-        up_read(&shrinker_rwsem);
++        // up_read(&shrinker_rwsem);
