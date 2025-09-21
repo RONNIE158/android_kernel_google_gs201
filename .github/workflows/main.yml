@@ -69,7 +69,7 @@ jobs:
         CCACHE_DIR: ${{ env.CCACHE_DIR }}
       run: |
         cd kernel
-        make ARCH=arm64 O=out beryllium_defconfig
+        make ARCH=arm64 O=out gs201_defconfig
         yes "" | make ARCH=arm64 O=out olddefconfig
         make -j$(nproc) ARCH=arm64 O=out \
           CC=clang \
