@@ -142,10 +142,17 @@ jobs:
        make O=out ARCH=arm64 modules_prepare
 
        # Build with verbose logging
-       PATH=${{ github.workspace }}/kernel-build-tools/bin:${{ github.workspace }}/gcc64/bin:${{ github.workspace }}/gcc32/bin:/usr/bin \
-       which clang
-       clang --version \
-       make O=out Image.lz4 dtbs modules V=1 | tee build.log    
+       PATH=${{ github.workspace }}/clang/bin:${{ github.workspace }}/gcc64/bin:${{ github.workspace }}/gcc32/bin:/usr/bin
+       make O=out ARCH=arm64 \
+       CC=clang \
+       CXX=clang++ \
+       LD=ld.lld \
+       LLVM=1 \
+       LLVM_IAS=1 \
+       CROSS_COMPILE=aarch64-linux-android- \
+       CROSS_COMPILE_ARM32=arm-linux-androideabi- \
+       Image.lz4 dtbs modules | tee build.log
+    
 
     - name: Verify Lindroid DRM Build
       run: |
