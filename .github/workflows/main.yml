@@ -30,8 +30,9 @@ jobs:
         path: kernel
 
     - name: Apply temporary kernel patch
-      working-directory: kernel  # masuk ke kernel tree yang benar
-      run: git apply ../patch/disable_shrinker_rwsem.patch   
+      run: |
+       cd kernel  # masuk ke root kernel tree
+       git apply ../patch/disable_shrinker_rwsem.patch   
   
     - name: Install Dependencies
       run: |
