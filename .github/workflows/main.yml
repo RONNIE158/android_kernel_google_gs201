@@ -100,9 +100,13 @@ jobs:
          V=1 \
          Image.lz4 dtbs modules |& tee build.log
 
-         # Build dtbo.img pakai mkdtimg
-         pip3 install mkdtimg
-         python3 -m mkdtimg create out/dtbo.img out/arch/arm64/boot/dts/google/*.dtbo    
+    - name: Build DTBO
+      run: |
+        git clone https://android.googlesource.com/platform/system/libufdt tools/libufdt
+        cd tools/libufdt
+        gcc -o mkdtimg mkdtimg.c utils.c -Iinclude
+        cd ../..
+        ./tools/libufdt/mkdtimg create out/arch/arm64/boot/dtbo.img --page_size=4096 out/arch/arm64/boot/dts/google/*.dtbo    
 
     - name: Verify Lindroid DRM Build
       run: |
