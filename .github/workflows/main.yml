@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DEVICE: pantah
-      KERNEL_REPO: android_kernel_google_gs201
+      KERNEL_REPO: RONNIE158/android_kernel_google_gs201
       KERNEL_BRANCH: 13.0.0-sultan
       PATCH_REPO: Linux-on-droid/lindroid-drm-loopback
       CLANG_VERSION: r416183b
