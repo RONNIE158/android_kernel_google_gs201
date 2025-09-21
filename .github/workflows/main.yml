@@ -22,20 +22,20 @@ jobs:
         ref: ${{ env.KERNEL_BRANCH }}
         path: kernel
   
-    #- name: Install Dependencies
-      #run: |
-        #sudo apt-get update
-        #sudo apt-get install -y \
-          #bc bison build-essential flex lld \
-          #libssl-dev libncurses5-dev libncursesw5-dev \
-          #python3 python3-pip rsync ccache zip \
-          #binutils-aarch64-linux-gnu binutils-arm-linux-gnueabi \
-          #git curl wget unzip \
-          #libelf-dev dwarves \
-          #coreutils device-tree-compiler \
-          #clang llvm \
-          #lz4 xz-utils zstd \
-          #android-sdk-libsparse-utils
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          bc bison build-essential flex lld \
+          libssl-dev libncurses5-dev libncursesw5-dev \
+          python3 python3-pip rsync ccache zip \
+          binutils-aarch64-linux-gnu binutils-arm-linux-gnueabi \
+          git curl wget unzip \
+          libelf-dev dwarves \
+          coreutils device-tree-compiler \
+          clang llvm \
+          lz4 xz-utils zstd \
+          android-sdk-libsparse-utils
 
     - name: Download toolchain
       run: |
@@ -49,12 +49,12 @@ jobs:
         #git clone --depth=1 https://github.com/LineageOS/android_prebuilts_clang_kernel_linux-x86_clang-r416183b clang
         #echo "${{ github.workspace }}/clang/bin" >> $GITHUB_PATH
 
-    - name: Set up LineageOS GCC Toolchains
-      run: |
-        git clone --depth=1 https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9 gcc64
-        git clone --depth=1 https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_arm_arm-linux-androideabi-4.9 gcc32
-        echo "${{ github.workspace }}/gcc64/bin" >> $GITHUB_PATH
-        echo "${{ github.workspace }}/gcc32/bin" >> $GITHUB_PATH
+    #- name: Set up LineageOS GCC Toolchains
+      #run: |
+        #git clone --depth=1 https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9 gcc64
+        #git clone --depth=1 https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_arm_arm-linux-androideabi-4.9 gcc32
+        #echo "${{ github.workspace }}/gcc64/bin" >> $GITHUB_PATH
+        #echo "${{ github.workspace }}/gcc32/bin" >> $GITHUB_PATH
 
     - name: Ensure Clang is used
       run: |
