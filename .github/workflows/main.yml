@@ -1,0 +1,104 @@
+name: Build GKI Kernel with Lindroid DRM, (berhasil)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-gki:
+    runs-on: ubuntu-latest
+    env:
+      DEVICE: pantah
+      KERNEL_REPO: RONNIE158/linux
+      KERNEL_BRANCH: beryllium-android-5.10
+      PATCH_REPO: Linux-on-droid/lindroid-drm-loopback
+      CLANG_VERSION: r416183b
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+
+    steps:
+    - name: Checkout Kernel
+      uses: actions/checkout@v3
+      with:
+        repository: ${{ env.KERNEL_REPO }}
+        ref: ${{ env.KERNEL_BRANCH }}
+        path: kernel
+
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          bc bison build-essential flex lld \
+          libssl-dev libncurses5-dev libncursesw5-dev \
+          python3 python3-pip rsync ccache zip \
+          gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi \
+          binutils-aarch64-linux-gnu binutils-arm-linux-gnueabi \
+          git curl wget unzip \
+          libelf-dev dwarves \
+          coreutils device-tree-compiler \
+          clang llvm
+
+    - name: Set up LineageOS Clang
+      run: |
+        git clone --depth=1 https://github.com/LineageOS/android_prebuilts_clang_kernel_linux-x86_clang-${{ env.CLANG_VERSION }} clang
+        echo "${{ github.workspace }}/clang/bin" >> $GITHUB_PATH
+
+    - name: Checkout Lindroid DRM Loopback
+      uses: actions/checkout@v3
+      with:
+        repository: ${{ env.PATCH_REPO }}
+        path: drm-dkms
+
+    - name: Patch Kernel for Lindroid DRM
+      run: |
+        cd kernel
+        # Tambah ke drivers/Makefile
+        echo 'obj-y += lindroid-drm/' >> drivers/Makefile
+        # Tambah ke drivers/Kconfig
+        echo 'source "drivers/lindroid-drm/Kconfig"' >> drivers/Kconfig
+        # Copy source lindroid-drm ke tree kernel
+        cp -r ../drm-dkms drivers/lindroid-drm
+
+    - name: Build Kernel GKI
+      env:
+        PATH: ${{ github.workspace }}/clang/bin:/usr/bin:$PATH
+        CC: clang
+        CXX: clang++
+        LD: ld.lld
+        CROSS_COMPILE: aarch64-linux-gnu-
+        CROSS_COMPILE_ARM32: arm-linux-gnueabi-
+        ARCH: arm64
+        CCACHE_DIR: ${{ env.CCACHE_DIR }}
+      run: |
+        cd kernel
+        make ARCH=arm64 O=out beryllium_defconfig
+        yes "" | make ARCH=arm64 O=out olddefconfig
+        make -j$(nproc) ARCH=arm64 O=out \
+          CC=clang \
+          CXX=clang++ \
+          CROSS_COMPILE=aarch64-linux-gnu- \
+          CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+          LD=ld.lld \
+          Image.lz4 dtbs modules | tee build.log
+
+    - name: Verify Lindroid DRM Build
+      run: |
+        cd kernel
+        if grep -q "AR      drivers/lindroid-drm/built-in.a" build.log; then
+          echo "✅ Lindroid DRM built successfully"
+        else
+          echo "❌ Lindroid DRM NOT built"
+          exit 1
+        fi    
+
+    - name: Collect Build Outputs
+      run: |
+        mkdir -p artifacts
+        cp kernel/out/arch/arm64/boot/Image.lz4 artifacts/
+        cp kernel/out/arch/arm64/boot/dts/google/*.dtb artifacts/ || true
+        cp kernel/out/arch/arm64/boot/dts/google/*.dtbo artifacts/ || true
+        find kernel/out -name "*.ko" -exec cp {} artifacts/ \;
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: gki-lindroid-build
+        path: artifacts
