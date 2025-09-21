@@ -98,7 +98,11 @@ jobs:
          LD=ld.lld \
          LLVM=1 LLVM_IAS=1 \
          V=1 \
-         Image.lz4 dtbo.img modules |& tee build.log
+         Image.lz4 dtbs modules |& tee build.log
+
+         # Build dtbo.img pakai mkdtimg
+         pip3 install mkdtimg
+         python3 -m mkdtimg create out/dtbo.img out/arch/arm64/boot/dts/google/*.dtbo    
 
     - name: Verify Lindroid DRM Build
       run: |
