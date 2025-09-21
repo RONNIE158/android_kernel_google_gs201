@@ -38,14 +38,14 @@ jobs:
         ccache --max-size=2G
         ccache --set-config=compression=true
         echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
-  
+   
     - name: Checkout Kernel
       uses: actions/checkout@v3
       with:
         repository: ${{ env.KERNEL_REPO }}
         ref: ${{ env.KERNEL_BRANCH }}
         path: kernel
-
+  
     - name: Install Dependencies
       run: |
         sudo apt-get update
@@ -61,6 +61,21 @@ jobs:
           clang llvm \
           lz4 xz-utils zstd \
           android-sdk-libsparse-utils
+
+    - name: Download toolchain
+      run: |
+        AOSP_MIRROR=https://android.googlesource.com
+        BRANCH=main-kernel-build-2024
+        git clone $AOSP_MIRROR/kernel/prebuilts/build-tools -b $BRANCH --depth 1 kernel-build-tools
+        git clone $AOSP_MIRROR/platform/system/tools/mkbootimg -b $BRANCH --depth 1 mkbootimg
+
+    - name: Install Repo
+      run: |
+        mkdir -p ./git-repo
+        echo "Downloading repo tool..."
+        curl https://storage.googleapis.com/git-repo-downloads/repo > ./git-repo/repo
+        chmod a+rx ./git-repo/repo
+        echo "REPO=$GITHUB_WORKSPACE/./git-repo/repo" >> $GITHUB_ENV    
 
     - name: Set up LineageOS Clang 14
       run: |
