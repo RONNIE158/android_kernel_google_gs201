@@ -77,7 +77,7 @@ jobs:
           CROSS_COMPILE=aarch64-linux-gnu- \
           CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
           LD=ld.lld \
-          Image.lz4 dtbs modules | tee build.log
+          Image.lz4 dtbs | tee build.log
 
     - name: Verify Lindroid DRM Build
       run: |
