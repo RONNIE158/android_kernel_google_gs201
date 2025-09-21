@@ -84,16 +84,6 @@ jobs:
         cp -r ../drm-dkms drivers/lindroid-drm
 
     - name: Build Kernel GKI 5.10
-      env:
-        PATH: ${{ github.workspace }}/clang/bin:${{ github.workspace }}/gcc64/bin:${{ github.workspace }}/gcc32/bin:/usr/bin:$PATH
-        ARCH: arm64
-        CC: clang
-        CXX: clang++
-        LD: ld.lld
-        LLVM: 1
-        LLVM_IAS: 1
-        CROSS_COMPILE: aarch64-linux-android-
-        CROSS_COMPILE_ARM32: arm-linux-androideabi-
       run: |
        cd kernel
         make ARCH=arm64 mrproper || true
@@ -152,12 +142,16 @@ jobs:
        make O=out ARCH=arm64 modules_prepare
 
        # Build with verbose logging
-       make O=out ARCH=arm64 \
-         CC=clang \
-         CROSS_COMPILE=aarch64-linux-android- \
-         LD=ld.lld \
-         LLVM=1 LLVM_IAS=1 \
-         Image.lz4 dtbs modules |& tee build.log    
+       PATH=${{ github.workspace }}/kernel-build-tools/bin:${{ github.workspace }}/gcc64/bin:${{ github.workspace }}/gcc32/bin:/usr/bin \
+       ARCH=arm64 \
+       CC=clang \
+       CXX=clang++ \
+       LD=ld.lld \
+       LLVM=1 \
+       LLVM_IAS=1 \
+       CROSS_COMPILE=aarch64-linux-android- \
+       CROSS_COMPILE_ARM32=arm-linux-androideabi- \
+       make O=out Image.lz4 dtbs modules V=1 | tee build.log    
 
     - name: Verify Lindroid DRM Build
       run: |
