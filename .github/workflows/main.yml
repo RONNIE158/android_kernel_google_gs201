@@ -123,7 +123,6 @@ jobs:
     - name: Build Kernel GKI 5.10
       run: |
        cd kernel
-        make ARCH=arm64 mrproper || true
         rm -rf out
         mkdir out
         make O=out ARCH=arm64 gki_defconfig
