@@ -55,7 +55,6 @@ jobs:
         cd kernel
         echo 'obj-y += lindroid-drm/' >> drivers/Makefile
         echo 'source "drivers/lindroid-drm/Kconfig"' >> drivers/Kconfig
-        cp -r ../drm-dkms drivers/lindroid-drm
 
         # Copy source lindroid-drm ke tree kernel
         cp -r ../drm-dkms drivers/lindroid-drm    
