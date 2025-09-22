@@ -22,13 +22,14 @@ jobs:
 
     - name: Install dependencies
       run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          bc bison build-essential flex lld \
-          libssl-dev libncurses5-dev libncursesw5-dev \
-          python3 python3-pip rsync zip \
-          binutils-aarch64-linux-gnu binutils-arm-linux-gnueabi \
-          git curl wget unzip libelf-dev dwarves device-tree-compiler clang llvm lz4 xz-utils zstd
+       sudo apt-get update
+       sudo apt-get install -y bc bison build-essential flex lld \
+         libssl-dev libncurses5-dev libncursesw5-dev \
+         python3 python3-pip rsync zip \
+         binutils-aarch64-linux-gnu binutils-arm-linux-gnueabi \
+         gcc-aarch64-linux-gnu gcc g++ git curl wget unzip \
+         libelf-dev dwarves device-tree-compiler clang llvm lz4 xz-utils zstd
+
 
     - name: Download Clang-r547379
       run: |
