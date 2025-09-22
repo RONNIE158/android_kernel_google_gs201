@@ -1,0 +1,135 @@
+name: Build GKI Kernel with Lindroid DRM, (berhasil)x
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-gki:
+    runs-on: ubuntu-latest
+    env:
+      CCACHE_COMPILERCHECK: "%compiler% -dumpmachine; %compiler% -dumpversion"
+      DEVICE: pantah
+      KERNEL_REPO: RONNIE158/android_kernel_google_gs201
+      KERNEL_BRANCH: 13.0.0-sultan
+      PATCH_REPO: Linux-on-droid/lindroid-drm-loopback
+      CC: clang
+      CXX: clang++
+      LD: ld.lld
+      LLVM: 1
+      LLVM_IAS: 1
+      CROSS_COMPILE: aarch64-linux-android-
+      CROSS_COMPILE_ARM32: arm-linux-androideabi-
+
+    steps:
+    - name: Checkout Kernel
+      uses: actions/checkout@v3
+      with:
+        repository: ${{ env.KERNEL_REPO }}
+        ref: ${{ env.KERNEL_BRANCH }}
+        path: kernel
+
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          bc bison build-essential flex lld \
+          libssl-dev libncurses5-dev libncursesw5-dev \
+          python3 python3-pip rsync ccache zip \
+          binutils-aarch64-linux-gnu binutils-arm-linux-gnueabi \
+          git curl wget unzip \
+          libelf-dev dwarves \
+          coreutils device-tree-compiler \
+          clang llvm \
+          lz4 xz-utils zstd \
+          android-sdk-libsparse-utils
+
+    - name: Clone Google Clang
+      run: |
+        git clone --depth=1 https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 clang
+        echo "${{ github.workspace }}/clang/bin" >> $GITHUB_PATH
+
+    - name: Set environment variables for tools
+      run: |
+        echo "AVBTOOL=$GITHUB_WORKSPACE/kernel-build-tools/linux-x86/bin/avbtool" >> $GITHUB_ENV
+        echo "MKBOOTIMG=$GITHUB_WORKSPACE/mkbootimg/mkbootimg.py" >> $GITHUB_ENV
+        echo "UNPACK_BOOTIMG=$GITHUB_WORKSPACE/mkbootimg/unpack_bootimg.py" >> $GITHUB_ENV  
+
+    - name: Test Google Clang Toolchain
+      run: |
+       which clang
+       clang --version
+       which aarch64-linux-android-gcc || echo "GCC64 not needed"
+
+    - name: Setup CCACHE
+      run: |
+       mkdir -p ${{ github.workspace }}/.ccache
+       export CCACHE_DIR=${{ github.workspace }}/.ccache
+       export CCACHE_COMPILERCHECK="%compiler% -dumpmachine; %compiler% -dumpversion"
+       export CCACHE_BASEDIR=${{ github.workspace }}
+       export CCACHE_NOHASHDIR=1
+       echo "${{ github.workspace }}/clang/bin" >> $GITHUB_PATH
+
+    - name: Checkout Lindroid DRM Loopback
+      uses: actions/checkout@v3
+      with:
+        repository: ${{ env.PATCH_REPO }}
+        path: drm-dkms
+
+    - name: Patch Kernel for Lindroid DRM
+      run: |
+        cd kernel
+        echo 'obj-y += lindroid-drm/' >> drivers/Makefile
+        echo 'source "drivers/lindroid-drm/Kconfig"' >> drivers/Kconfig
+        cp -r ../drm-dkms drivers/lindroid-drm
+
+    - name: Build Kernel GKI 5.10 with Google Clang
+      run: |
+       cd kernel
+       rm -rf out
+       mkdir out
+       make O=out ARCH=arm64 gs201-stock_defconfig
+
+       # Fix configs and enable namespaces + cgroups
+       scripts/config --file out/.config --disable IKHEADERS
+       scripts/config --file out/.config -e NAMESPACES
+       scripts/config --file out/.config -e CGROUPS
+       scripts/config --file out/.config -e MEMCG
+       scripts/config --file out/.config -e CPUSETS
+       make O=out ARCH=arm64 olddefconfig
+       make O=out ARCH=arm64 modules_prepare
+
+       # Build kernel
+       PATH=${{ github.workspace }}/clang/bin:/usr/bin \
+       make O=out ARCH=arm64 \
+       CC="ccache clang" \
+       CXX="ccache clang++" \
+       LD=ld.lld \
+       LLVM=1 \
+       LLVM_IAS=1 \
+       CROSS_COMPILE=aarch64-linux-android- \
+       CROSS_COMPILE_ARM32=arm-linux-androideabi- \
+       Image.lz4 dtbs modules | tee build.log
+
+    - name: Verify Lindroid DRM Build
+      run: |
+        cd kernel
+        if grep -q "AR      drivers/lindroid-drm/built-in.a" build.log; then
+          echo "✅ Lindroid DRM built successfully"
+        else
+          echo "❌ Lindroid DRM NOT built"
+          exit 1
+        fi    
+
+    - name: Collect Build Outputs
+      run: |
+        mkdir -p artifacts
+        cp kernel/out/arch/arm64/boot/Image.lz4 artifacts/
+        cp kernel/out/arch/arm64/boot/dts/google/*.dtb artifacts/ || true
+        cp kernel/out/arch/arm64/boot/dts/google/*.dtbo artifacts/ || true
+        find kernel/out -name "*.ko" -exec cp {} artifacts/ \;
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: gki-lindroid-build
+        path: artifacts
