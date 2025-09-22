@@ -247,7 +247,7 @@ static int prealloc_memcg_shrinker(struct shrinker *shrinker)
 {
 	int id, ret = -ENOMEM;
 
-	down_write(&shrinker_lock);
+	spin_lock(&shrinker_lock);
 	/* This may call shrinker, so it must use down_read_trylock() */
 	id = idr_alloc(&shrinker_idr, SHRINKER_REGISTERING, 0, 0, GFP_KERNEL);
 	if (id < 0)
@@ -264,7 +264,7 @@ static int prealloc_memcg_shrinker(struct shrinker *shrinker)
 	shrinker->id = id;
 	ret = 0;
 unlock:
-	up_write(&shrinker_lock);
+	spin_unlock(&shrinker_lock);
 	return ret;
 }
 
@@ -274,7 +274,7 @@ static void unregister_memcg_shrinker(struct shrinker *shrinker)
 
 	BUG_ON(id < 0);
 
-	down_write(&shrinker_lock);
+	spin_lock(&shrinker_lock);
 	idr_remove(&shrinker_idr, id);
 	up_write(&shrinker_lock);
 }
@@ -607,7 +607,7 @@ static unsigned long shrink_slab_memcg(gfp_t gfp_mask, int nid,
 	if (!mem_cgroup_online(memcg))
 		return 0;
 
-	if (!down_read_trylock(&shrinker_lock))
+	if (!spin_trylock(&shrinker_lock))
 		return 0;
 
 	map = rcu_dereference_protected(memcg->nodeinfo[nid]->shrinker_map,
@@ -662,13 +662,13 @@ static unsigned long shrink_slab_memcg(gfp_t gfp_mask, int nid,
 		}
 		freed += ret;
 
-		if (rwsem_is_contended(&shrinker_lock)) {
+		if (spin_is_locked(&shrinker_lock)) {
 			freed = freed ? : 1;
 			break;
 		}
 	}
 unlock:
-	up_read(&shrinker_lock);
+	spin_unlock(&shrinker_lock);
 	return freed;
 }
 #else /* CONFIG_MEMCG */
