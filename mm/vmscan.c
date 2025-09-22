@@ -274,9 +274,9 @@ static void unregister_memcg_shrinker(struct shrinker *shrinker)
 
 	BUG_ON(id < 0);
 
-	down_write(&shrinker_rwsem);
+	down_write(&shrinkers_lock);
 	idr_remove(&shrinker_idr, id);
-	up_write(&shrinker_rwsem);
+	up_write(&shrinkers_lock);
 }
 
 static bool cgroup_reclaim(struct scan_control *sc)
