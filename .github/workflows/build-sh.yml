@@ -16,7 +16,13 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y git wget unzip zip curl bc build-essential flex bison \
-          libssl-dev libncurses6 libncurses6-dev ccache python3
+          libssl-dev ccache python3
+      
+      - name : cekout libcurses
+        run : |
+          wget http://archive.ubuntu.com/ubuntu/pool/main/n/ncurses/libncurses6-dev_6.4-0ubuntu1_amd64.deb
+          sudo dpkg -i libncurses6-dev_6.4-0ubuntu1_amd64.deb
+          sudo apt-get install -f
 
       - name: Make build.sh executable
         run: chmod +x kernel/build.sh
