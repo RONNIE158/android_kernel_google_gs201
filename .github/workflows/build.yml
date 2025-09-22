@@ -9,7 +9,7 @@ jobs:
     env:
       DEFCONFIG: gs201_defconfig
       ZIPNAME: Kernel-A13-GoPix-7-Series-KSu-next.zip
-      KBUILD_BUILD_USER: "@riyanjulai"
+      KBUILD_BUILD_USER: "@beluga"
       KBUILD_BUILD_HOST: "Ubuntu-Linux"
       PATCH_REPO: Linux-on-droid/lindroid-drm-loopback
 
