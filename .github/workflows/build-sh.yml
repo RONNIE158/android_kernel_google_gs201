@@ -23,5 +23,4 @@ jobs:
         run: chmod +x ./build.sh
 
       - name: Build Kernel
-        working-directory: ./kernel  # workflow akan langsung jalan di folder kernel
         run: ./build.sh
