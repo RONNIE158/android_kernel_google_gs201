@@ -15,8 +15,16 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt update
-          sudo apt install -y git wget unzip zip curl bc build-essential flex bison \
-          libssl-dev ccache python3 libncurses-dev \
+          sudo apt install -y git wget unzip zip curl bc bison build-essential flex lld \
+          libssl-dev libncurses5-dev libncursesw5-dev \
+          python3 python3-pip rsync ccache zip \
+          binutils-aarch64-linux-gnu binutils-arm-linux-gnueabi \
+          libelf-dev dwarves \
+          coreutils device-tree-compiler \
+          clang llvm \
+          lz4 xz-utils zstd \
+          android-sdk-libsparse-utils \
+          libncurses-dev \
           gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi
      
 
