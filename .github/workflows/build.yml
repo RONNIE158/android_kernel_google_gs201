@@ -30,14 +30,18 @@ jobs:
          gcc-aarch64-linux-gnu gcc g++ git curl wget unzip \
          libelf-dev dwarves device-tree-compiler clang llvm lz4 xz-utils zstd
 
-
-    - name: Download Clang-r547379
+    - name: Clone Google Clang
       run: |
-        mkdir -p ${{ github.workspace }}/clang-r547379
-        wget -P ${{ github.workspace }}/clang-r547379/ https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-r547379.tar.gz
-        tar -xf ${{ github.workspace }}/clang-r547379/clang-r547379.tar.gz -C ${{ github.workspace }}/clang-r547379/
-        rm -f ${{ github.workspace }}/clang-r547379/clang-r547379.tar.gz
-        echo "${{ github.workspace }}/clang-r547379/bin" >> $GITHUB_PATH
+        git clone --depth=1 https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 clang
+        echo "${{ github.workspace }}/clang/bin" >> $GITHUB_PATH     
+    
+    #- name: Download Clang-r547379
+      #run: |
+        #mkdir -p ${{ github.workspace }}/clang-r547379
+        #wget -P ${{ github.workspace }}/clang-r547379/ https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-r547379.tar.gz
+        #tar -xf ${{ github.workspace }}/clang-r547379/clang-r547379.tar.gz -C ${{ github.workspace }}/clang-r547379/
+        #rm -f ${{ github.workspace }}/clang-r547379/clang-r547379.tar.gz
+        #echo "${{ github.workspace }}/clang-r547379/bin" >> $GITHUB_PATH
 
     - name: Set up AnyKernel
       run: |
