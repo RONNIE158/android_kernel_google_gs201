@@ -1,0 +1,117 @@
+name: Build GKI Kernel with Lindroid DRM (defconfig)
+
+on:
+  workflow_dispatch:
+
+env:
+  PATCH_REPO: Linux-on-droid/lindroid-drm-loopback
+  KERNEL_REPO: RONNIE158/android_kernel_google_gs201
+  KERNEL_BRANCH: 13.0.0-sultan
+  CLANG_VERSION: r416183b
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Checkout Kernel
+      uses: actions/checkout@v3
+      with:
+        repository: ${{ env.KERNEL_REPO }}
+        ref: ${{ env.KERNEL_BRANCH }}
+        path: kernel
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          bc bison build-essential flex lld \
+          libssl-dev libncurses5-dev libncursesw5-dev \
+          python3 python3-pip rsync cpio zip \
+          git curl wget unzip libelf-dev dwarves \
+          device-tree-compiler
+
+    - name: Clone Google Clang
+      run: |
+        git clone --depth=1 https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 clang
+        echo "${{ github.workspace }}/clang/bin" >> $GITHUB_PATH
+
+    - name: Clone Android Binutils 4.9
+      run: |
+        git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9 aarch64-linux-android-4.9
+        echo "${{ github.workspace }}/aarch64-linux-android-4.9/bin" >> $GITHUB_PATH
+
+    - name: Checkout Lindroid DRM Patch
+      uses: actions/checkout@v3
+      with:
+        repository: ${{ env.PATCH_REPO }}
+        path: drm-dkms
+
+    - name: Apply Lindroid DRM Patch
+      run: |
+        cd kernel
+        echo 'obj-y += lindroid-drm/' >> drivers/Makefile
+        echo 'source "drivers/lindroid-drm/Kconfig"' >> drivers/Kconfig
+        cp -r ../drm-dkms drivers/lindroid-drm
+
+    - name: Clone kernel/build + configs
+      run: |
+        git clone https://android.googlesource.com/kernel/build kernel/build
+        git clone https://android.googlesource.com/kernel/configs kernel/configs
+
+    - name: Clone mkbootimg tools
+      run: git clone https://android.googlesource.com/platform/system/tools/mkbootimg mkbootimg
+
+    - name: Setup Environment
+      run: |
+        export PATH=$PWD/clang/bin:$PWD/aarch64-linux-android-4.9/bin:$PATH
+        export CROSS_COMPILE=aarch64-linux-android-
+        export CC=clang
+        export LD=ld.lld
+        export AR=llvm-ar
+        export OBJCOPY=llvm-objcopy
+        export OBJDUMP=llvm-objdump
+        export STRIP=llvm-strip
+        echo "Environment ready"
+
+    - name: Build Kernel
+      run: |
+        mkdir -p kernel/out
+        cd kernel
+        make O=out ARCH=arm64 gki_defconfig
+        make -j$(nproc) O=out ARCH=arm64 Image.lz4 dtbs modules | tee build.log
+
+    - name: Build boot.img
+      run: |
+        mkdir -p artifacts
+        echo "init" | cpio -H newc -o > artifacts/ramdisk.img
+        python3 mkbootimg/mkbootimg.py \
+          --kernel kernel/out/arch/arm64/boot/Image.lz4 \
+          --ramdisk artifacts/ramdisk.img \
+          --dtb kernel/out/arch/arm64/boot/dts/google/pantah.dtb \
+          --os_version 13.0.0 \
+          --os_patch_level 2023-06-05 \
+          --header_version 4 \
+          --base 0x00000000 \
+          --pagesize 4096 \
+          --cmdline "console=ttyMSM0,115200n8 earlycon=msm_geni_serial,0xA90000" \
+          --output artifacts/boot.img
+
+    - name: Collect Build Outputs
+      run: |
+        mkdir -p artifacts
+        cp kernel/out/arch/arm64/boot/Image.lz4 artifacts/
+        cp kernel/out/arch/arm64/boot/dts/google/*.dtb artifacts/ || true
+        cp kernel/out/arch/arm64/boot/dts/google/*.dtbo artifacts/ || true
+        if [ -d kernel/out/modules ]; then
+          tar -czf artifacts/modules.tar.gz -C kernel/out/modules .
+        fi
+        cp artifacts/boot.img artifacts/ || true
+        cp kernel/out/System.map artifacts/ || true
+        cp kernel/out/vmlinux artifacts/ || true
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: gki-lindroid-build-full
+        path: artifacts
