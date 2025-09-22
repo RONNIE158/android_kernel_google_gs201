@@ -173,7 +173,7 @@ jobs:
        scripts/config --file out/.config -e IP_NF_TARGET_MASQUERADE
 
        # Apply config changes
-       yes "" | make O=out ARCH=arm64 olddefconfig
+       make O=out ARCH=arm64 olddefconfig
 
        # Make modules_prepare
        make O=out ARCH=arm64 modules_prepare
