@@ -43,7 +43,7 @@ jobs:
         if [ ! -d ${{ github.workspace }}/anykernel ]; then
           git clone https://github.com/sudoyottaxbyte/any_kernel.git ${{ github.workspace }}/anykernel
         fi
-    - name: Checkout Lindroid DRM Loopback
+   
     - name: Checkout Lindroid DRM Patch
       uses: actions/checkout@v3
       with:
