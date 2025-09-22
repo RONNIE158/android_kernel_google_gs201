@@ -186,16 +186,11 @@ jobs:
 
        # Build with verbose logging
        PATH=${{ github.workspace }}/clang/bin:${{ github.workspace }}/gcc64/bin:${{ github.workspace }}/gcc32/bin:/usr/bin
-       make O=out ARCH=arm64 \
-       CC="ccache clang" \
-       CXX="ccache clang++" \
-       LD=ld.lld \
-       LLVM=1 \
-       LLVM_IAS=1 \
-       CROSS_COMPILE=aarch64-linux-android- \
-       CROSS_COMPILE_ARM32=arm-linux-androideabi- \
-       Image.lz4 dtbs modules | tee build.log
-    
+       make -j$(nproc) O=out ARCH=arm64 \
+          CC=clang LD=ld.lld AR=llvm-ar AS=llvm-as NM=llvm-nm \
+          OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip \
+          CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+          LLVM=1 LLVM_IAS=1 | tee build.log
 
     - name: Verify Lindroid DRM Build
       run: |
