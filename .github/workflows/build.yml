@@ -1,0 +1,84 @@
+name: Build Kernel A13 GoPix 7 Series
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-kernel:
+    runs-on: ubuntu-latest
+
+    env:
+      DEFCONFIG: gs201_defconfig
+      KBUILD_BUILD_USER: "@riyanjulai"
+      KBUILD_BUILD_HOST: "Ubuntu-Linux"
+      ZIPNAME: "Kernel-A13-GoPix-7-Series-KSu-next.zip"
+
+    steps:
+    - name: Checkout Kernel
+      uses: actions/checkout@v3
+      with:
+        repository: RONNIE158/android_kernel_google_gs201
+        ref: 13.0.0-sultan
+        path: kernel
+
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          bc bison build-essential flex lld \
+          libssl-dev libncurses5-dev libncursesw5-dev \
+          python3 python3-pip rsync zip unzip \
+          binutils-aarch64-linux-gnu binutils-arm-linux-gnueabi \
+          git wget tar lz4 xz-utils zstd llvm clang
+
+    - name: Download and Setup Google Clang r547379
+      run: |
+        mkdir -p ${{ github.workspace }}/clang-r547379
+        wget -P ${{ github.workspace }}/clang-r547379 \
+          https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-r547379.tar.gz
+        tar -xf ${{ github.workspace }}/clang-r547379/clang-r547379.tar.gz -C ${{ github.workspace }}/clang-r547379
+        rm -f ${{ github.workspace }}/clang-r547379/clang-r547379.tar.gz
+        echo "${{ github.workspace }}/clang-r547379/clang/bin" >> $GITHUB_PATH
+
+    - name: Show Clang version
+      run: |
+        which clang
+        clang --version
+
+    - name: Build Kernel
+      run: |
+        cd kernel
+        rm -rf out
+        mkdir -p out
+        make O=out ARCH=arm64 $DEFCONFIG
+
+        make -j$(nproc) O=out ARCH=arm64 \
+          CC=clang LD=ld.lld AR=llvm-ar AS=llvm-as NM=llvm-nm \
+          OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip \
+          CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+          LLVM=1 LLVM_IAS=1 LTO=full | tee log.txt
+
+    - name: Setup AnyKernel
+      run: |
+        if [ ! -d ${{ github.workspace }}/anykernel ]; then
+          git clone https://github.com/sudoyottaxbyte/any_kernel.git ${{ github.workspace }}/anykernel
+        fi
+
+    - name: Zip Flashable Kernel
+      run: |
+        if [[ -f kernel/out/arch/arm64/boot/Image.lz4 ]] && [[ -f kernel/out/arch/arm64/boot/dts/google/dtbo.img ]]; then
+          cp kernel/out/arch/arm64/boot/Image.lz4 ${{ github.workspace }}/anykernel/
+          cp kernel/out/arch/arm64/boot/dts/google/dtbo.img ${{ github.workspace }}/anykernel/
+          cd ${{ github.workspace }}/anykernel
+          zip -r9 $ZIPNAME *
+          mv $ZIPNAME ${{ github.workspace }}
+        else
+          echo "❌ Build failed: Image.lz4 or dtbo.img not found"
+          exit 1
+        fi
+
+    - name: Upload Kernel Zip
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.ZIPNAME }}
+        path: ${{ github.workspace }}/$ZIPNAME
