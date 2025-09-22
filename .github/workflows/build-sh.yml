@@ -15,7 +15,8 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt update
-          sudo apt install -y git wget unzip zip curl bc build-essential flex bison libssl-dev libncurses5 libncurses5-dev ccache python3
+          sudo apt install -y git wget unzip zip curl bc build-essential flex bison \
+          libssl-dev libncurses6 libncurses6-dev ccache python3
 
       - name: Make build.sh executable
         run: chmod +x kernel/build.sh
