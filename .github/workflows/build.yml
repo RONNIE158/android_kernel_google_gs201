@@ -43,6 +43,22 @@ jobs:
         if [ ! -d ${{ github.workspace }}/anykernel ]; then
           git clone https://github.com/sudoyottaxbyte/any_kernel.git ${{ github.workspace }}/anykernel
         fi
+    - name: Checkout Lindroid DRM Loopback
+      uses: actions/checkout@v3
+      with:
+        repository: ${{ env.PATCH_REPO }}
+        path: drm-dkms
+
+    - name: Patch Kernel for Lindroid DRM
+      run: |
+        cd kernel
+        # Tambah ke drivers/Makefile
+        echo 'obj-y += lindroid-drm/' >> drivers/Makefile
+        # Tambah ke drivers/Kconfig
+        echo 'source "drivers/lindroid-drm/Kconfig"' >> drivers/Kconfig
+
+        # Copy source lindroid-drm ke tree kernel
+        cp -r ../drm-dkms drivers/lindroid-drm    
 
     - name: Build Kernel
       run: |
@@ -55,7 +71,15 @@ jobs:
           CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
           LLVM=1 LLVM_IAS=1 LTO=none CHECKSYSCALLS=n | tee build.log
 
-
+    - name: Verify Lindroid DRM Build
+      run: |
+        cd kernel
+        if grep -q "AR      drivers/lindroid-drm/built-in.a" build.log; then
+          echo "✅ Lindroid DRM built successfully"
+        else
+          echo "❌ Lindroid DRM NOT built"
+          exit 1
+        fi    
 
     - name: Prepare AnyKernel
       run: |
