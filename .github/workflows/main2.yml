@@ -1,24 +1,24 @@
-name: Build GKI Kernel with Lindroid DRM (defconfig)
+name: Build Kernel A13 GoPix 7 Series (test)
 
 on:
   workflow_dispatch:
 
-env:
-  PATCH_REPO: Linux-on-droid/lindroid-drm-loopback
-  KERNEL_REPO: RONNIE158/android_kernel_google_gs201
-  KERNEL_BRANCH: 13.0.0-sultan
-  CLANG_VERSION: r416183b
-
 jobs:
-  build:
-    runs-on: ubuntu-22.04
+  build-kernel:
+    runs-on: ubuntu-latest
+
+    env:
+      DEFCONFIG: gs201_defconfig
+      KBUILD_BUILD_USER: "@riyanjulai"
+      KBUILD_BUILD_HOST: "Ubuntu-Linux"
+      ZIPNAME: "Kernel-A13-GoPix-7-Series-KSu-next.zip"
 
     steps:
     - name: Checkout Kernel
       uses: actions/checkout@v3
       with:
-        repository: ${{ env.KERNEL_REPO }}
-        ref: ${{ env.KERNEL_BRANCH }}
+        repository: RONNIE158/android_kernel_google_gs201
+        ref: 13.0.0-sultan
         path: kernel
 
     - name: Install Dependencies
@@ -27,96 +27,60 @@ jobs:
         sudo apt-get install -y \
           bc bison build-essential flex lld \
           libssl-dev libncurses5-dev libncursesw5-dev \
-          python3 python3-pip rsync ccache zip \
+          python3 python3-pip rsync zip unzip \
           binutils-aarch64-linux-gnu binutils-arm-linux-gnueabi \
-          git curl wget unzip \
-          libelf-dev dwarves \
-          coreutils device-tree-compiler \
-          clang llvm \
-          lz4 xz-utils zstd \
-          android-sdk-libsparse-utils
+          gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi \
+          git wget tar lz4 xz-utils zstd llvm clang
 
-    - name: Clone Google Clang
+    - name: Download and Setup Google Clang r547379
       run: |
-        git clone --depth=1 https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 clang
-        echo "${{ github.workspace }}/clang/bin" >> $GITHUB_PATH
+        mkdir -p ${{ github.workspace }}/clang-r547379
+        wget -P ${{ github.workspace }}/clang-r547379 \
+          https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-r547379.tar.gz
+        tar -xf ${{ github.workspace }}/clang-r547379/clang-r547379.tar.gz -C ${{ github.workspace }}/clang-r547379
+        rm -f ${{ github.workspace }}/clang-r547379/clang-r547379.tar.gz
+        echo "${{ github.workspace }}/clang-r547379/clang/bin" >> $GITHUB_PATH
 
-    - name: Clone Android Binutils 4.9
+    - name: Show Clang version
       run: |
-        git clone --depth=1 https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9 aarch64-linux-android-4.9
-        echo "${{ github.workspace }}/aarch64-linux-android-4.9/bin" >> $GITHUB_PATH
-
-    - name: Checkout Lindroid DRM Patch
-      uses: actions/checkout@v3
-      with:
-        repository: ${{ env.PATCH_REPO }}
-        path: drm-dkms
-
-    - name: Apply Lindroid DRM Patch
-      run: |
-        cd kernel
-        echo 'obj-y += lindroid-drm/' >> drivers/Makefile
-        echo 'source "drivers/lindroid-drm/Kconfig"' >> drivers/Kconfig
-        cp -r ../drm-dkms drivers/lindroid-drm
-
-    - name: Clone kernel/build + configs
-      run: |
-        git clone https://android.googlesource.com/kernel/build kernel/build
-        git clone https://android.googlesource.com/kernel/configs kernel/configs
-
-    - name: Clone mkbootimg tools
-      run: git clone https://android.googlesource.com/platform/system/tools/mkbootimg mkbootimg
-
-    - name: Setup Environment
-      run: |
-        export PATH=$PWD/clang/bin:$PWD/aarch64-linux-android-4.9/bin:$PATH
-        export CROSS_COMPILE=aarch64-linux-android-
-        export CC=clang
-        export LD=ld.lld
-        export AR=llvm-ar
-        export OBJCOPY=llvm-objcopy
-        export OBJDUMP=llvm-objdump
-        export STRIP=llvm-strip
-        echo "Environment ready"
+        which clang
+        clang --version
 
     - name: Build Kernel
       run: |
-        mkdir -p kernel/out
         cd kernel
-        make O=out ARCH=arm64 gki_defconfig
-        make -j$(nproc) O=out ARCH=arm64 Image.lz4 dtbs modules | tee build.log
+        rm -rf out
+        mkdir -p out
+        make O=out ARCH=arm64 $DEFCONFIG CC=clang HOSTCC=clang
 
-    - name: Build boot.img
-      run: |
-        mkdir -p artifacts
-        echo "init" | cpio -H newc -o > artifacts/ramdisk.img
-        python3 mkbootimg/mkbootimg.py \
-          --kernel kernel/out/arch/arm64/boot/Image.lz4 \
-          --ramdisk artifacts/ramdisk.img \
-          --dtb kernel/out/arch/arm64/boot/dts/google/pantah.dtb \
-          --os_version 13.0.0 \
-          --os_patch_level 2023-06-05 \
-          --header_version 4 \
-          --base 0x00000000 \
-          --pagesize 4096 \
-          --cmdline "console=ttyMSM0,115200n8 earlycon=msm_geni_serial,0xA90000" \
-          --output artifacts/boot.img
+        make -j$(nproc) O=out ARCH=arm64 \
+          CC=clang LD=ld.lld AR=llvm-ar AS=llvm-as NM=llvm-nm \
+          OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip \
+          CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+          LLVM=1 LLVM_IAS=1 LTO=full | tee log.txt
 
-    - name: Collect Build Outputs
+    - name: Setup AnyKernel
       run: |
-        mkdir -p artifacts
-        cp kernel/out/arch/arm64/boot/Image.lz4 artifacts/
-        cp kernel/out/arch/arm64/boot/dts/google/*.dtb artifacts/ || true
-        cp kernel/out/arch/arm64/boot/dts/google/*.dtbo artifacts/ || true
-        if [ -d kernel/out/modules ]; then
-          tar -czf artifacts/modules.tar.gz -C kernel/out/modules .
+        if [ ! -d ${{ github.workspace }}/anykernel ]; then
+          git clone https://github.com/sudoyottaxbyte/any_kernel.git ${{ github.workspace }}/anykernel
         fi
-        cp artifacts/boot.img artifacts/ || true
-        cp kernel/out/System.map artifacts/ || true
-        cp kernel/out/vmlinux artifacts/ || true
 
-    - name: Upload Artifacts
+    - name: Zip Flashable Kernel
+      run: |
+        if [[ -f kernel/out/arch/arm64/boot/Image.lz4 ]] && [[ -f kernel/out/arch/arm64/boot/dts/google/dtbo.img ]]; then
+          cp kernel/out/arch/arm64/boot/Image.lz4 ${{ github.workspace }}/anykernel/
+          cp kernel/out/arch/arm64/boot/dts/google/dtbo.img ${{ github.workspace }}/anykernel/
+          cd ${{ github.workspace }}/anykernel
+          zip -r9 $ZIPNAME *
+          mv $ZIPNAME ${{ github.workspace }}
+        else
+          echo "❌ Build failed: Image.lz4 or dtbo.img not found"
+          exit 1
+        fi
+
+    - name: Upload Kernel Zip
       uses: actions/upload-artifact@v4
       with:
-        name: gki-lindroid-build-full
-        path: artifacts
+        name: ${{ env.ZIPNAME }}
+        path: ${{ github.workspace }}/$ZIPNAME
+
