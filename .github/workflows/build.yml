@@ -49,7 +49,7 @@ jobs:
       run: |
         cd kernel
         mkdir -p out
-        make O=out ARCH=arm64 $DEFCONFIG
+        make O=out ARCH=arm64 HOSTCC=clang $DEFCONFIG
         make -j$(nproc --all) O=out ARCH=arm64 \
           CC=clang LD=ld.lld AR=llvm-ar AS=llvm-as NM=llvm-nm \
           OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip \
