@@ -44,6 +44,12 @@ jobs:
           lz4 xz-utils zstd \
           android-sdk-libsparse-utils
 
+
+    - name: Clone Google Clang
+      run: |
+        git clone --depth=1 https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 clang
+        echo "${{ github.workspace }}/clang/bin" >> $GITHUB_PATH     
+
     - name: Download toolchain
       run: |
         AOSP_MIRROR=https://android.googlesource.com
