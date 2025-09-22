@@ -28,12 +28,7 @@ jobs:
          python3 python3-pip rsync zip \
          binutils-aarch64-linux-gnu binutils-arm-linux-gnueabi \
          gcc-aarch64-linux-gnu gcc g++ git curl wget unzip \
-         libelf-dev dwarves device-tree-compiler clang llvm lz4 xz-utils zstd
-
-    #- name: Clone Google Clang
-      #run: |
-        #git clone --depth=1 https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 clang
-        #echo "${{ github.workspace }}/clang/bin" >> $GITHUB_PATH     
+         libelf-dev dwarves device-tree-compiler clang llvm lz4 xz-utils zstd     
     
     - name: Download Clang-r547379
       run: |
@@ -54,16 +49,6 @@ jobs:
         cd kernel
         mkdir -p out
         make O=out ARCH=arm64 ${{ env.DEFCONFIG }}
-    
-        # Nonaktifkan LTO Full
-        sed -i 's/CONFIG_LTO_CLANG_FULL=y/# CONFIG_LTO_CLANG_FULL is not set/' out/.config
-    
-        # Aktifkan LTO Thin
-        sed -i 's/# CONFIG_LTO_CLANG_THIN is not set/CONFIG_LTO_CLANG_THIN=y/' out/.config
-    
-        # Nonaktifkan LTO None
-        sed -i 's/CONFIG_LTO_NONE=y/# CONFIG_LTO_NONE is not set/' out/.config
-
         make -j$(nproc) O=out ARCH=arm64 \
           CC=clang LD=ld.lld AR=llvm-ar AS=llvm-as NM=llvm-nm \
           OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip \
