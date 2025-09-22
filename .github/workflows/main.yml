@@ -28,11 +28,6 @@ jobs:
         repository: ${{ env.KERNEL_REPO }}
         ref: ${{ env.KERNEL_BRANCH }}
         path: kernel
-
-    - name: Apply temporary kernel patch
-      run: |
-       cd kernel  # masuk ke root kernel tree
-       git apply ../patch/disable_shrinker_rwsem.patch   
   
     - name: Install Dependencies
       run: |
