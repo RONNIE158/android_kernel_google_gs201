@@ -7,19 +7,14 @@ jobs:
   build-gki:
     runs-on: ubuntu-latest
     env:
-      CCACHE_COMPILERCHECK: "%compiler% -dumpmachine; %compiler% -dumpversion"
-      PATH: ${{ github.workspace }}/clang/bin:${{ github.workspace }}/gcc64/bin:${{ github.workspace }}/gcc32/bin:/usr/bin
+      DEFCONFIG: gs201_defconfig
+      ZIPNAME: Kernel-A13-GoPix-7-Series-KSu-next.zip
+      KBUILD_BUILD_USER: "@beluga"
+      KBUILD_BUILD_HOST: "Ubuntu-Linux"
       DEVICE: pantah
       KERNEL_REPO: RONNIE158/android_kernel_google_gs201
       KERNEL_BRANCH: 13.0.0-sultan
       PATCH_REPO: Linux-on-droid/lindroid-drm-loopback
-      CC: clang
-      CXX: clang++
-      LD: ld.lld
-      LLVM: 1
-      LLVM_IAS: 1
-      CROSS_COMPILE: aarch64-linux-android-
-      CROSS_COMPILE_ARM32: arm-linux-androideabi-
 
     steps:
     - name: Checkout Kernel
@@ -29,86 +24,30 @@ jobs:
         ref: ${{ env.KERNEL_BRANCH }}
         path: kernel
   
-    - name: Install Dependencies
+    - name: Install dependencies
       run: |
-        sudo apt update
-          sudo apt install -y git wget unzip zip curl bc bison build-essential flex lld \
-          libssl-dev libncurses5-dev libncursesw5-dev \
-          python3 python3-pip rsync ccache zip \
-          binutils-aarch64-linux-gnu binutils-arm-linux-gnueabi \
-          libelf-dev dwarves \
-          coreutils device-tree-compiler \
-          clang llvm \
-          lz4 xz-utils zstd \
-          android-sdk-libsparse-utils \
-          libncurses-dev \
-          gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi
-
-
-    - name: Clone Google Clang
+       sudo apt-get update
+       sudo apt-get install -y bc bison build-essential flex lld \
+         libssl-dev libncurses5-dev libncursesw5-dev \
+         python3 python3-pip rsync zip \
+         binutils-aarch64-linux-gnu binutils-arm-linux-gnueabi \
+         gcc-aarch64-linux-gnu gcc g++ git curl wget unzip \
+         libelf-dev dwarves device-tree-compiler clang llvm lz4 xz-utils zstd     
+    
+    - name: Download Clang-r547379
       run: |
-        git clone --depth=1 https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 clang
-        echo "${{ github.workspace }}/clang/bin" >> $GITHUB_PATH     
+        mkdir -p ${{ github.workspace }}/clang-r547379
+        wget -P ${{ github.workspace }}/clang-r547379/ https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-r547379.tar.gz
+        tar -xf ${{ github.workspace }}/clang-r547379/clang-r547379.tar.gz -C ${{ github.workspace }}/clang-r547379/
+        rm -f ${{ github.workspace }}/clang-r547379/clang-r547379.tar.gz
+        echo "${{ github.workspace }}/clang-r547379/bin" >> $GITHUB_PATH
 
-    #- name: Download toolchain
-      #run: |
-        #AOSP_MIRROR=https://android.googlesource.com
-        #BRANCH=main-kernel-build-2024
-        #git clone $AOSP_MIRROR/kernel/prebuilts/build-tools -b $BRANCH --depth 1 kernel-build-tools
-        #git clone $AOSP_MIRROR/platform/system/tools/mkbootimg -b $BRANCH --depth 1 mkbootimg
-
-    - name: Set environment variables
+    - name: Set up AnyKernel
       run: |
-        echo "AVBTOOL=$GITHUB_WORKSPACE/kernel-build-tools/linux-x86/bin/avbtool" >> $GITHUB_ENV
-        echo "MKBOOTIMG=$GITHUB_WORKSPACE/mkbootimg/mkbootimg.py" >> $GITHUB_ENV
-        echo "UNPACK_BOOTIMG=$GITHUB_WORKSPACE/mkbootimg/unpack_bootimg.py" >> $GITHUB_ENV  
-
-    #- name: Set up LineageOS Clang 14
-      #run: |
-        #git clone --depth=1 https://github.com/LineageOS/android_prebuilts_clang_kernel_linux-x86_clang-r416183b clang
-        #echo "${{ github.workspace }}/clang/bin" >> $GITHUB_PATH
-
-    #- name: Setup LineageOS Clang
-      #run: |
-       #git clone --depth=1 https://github.com/LineageOS/android_prebuilts_clang_kernel_linux-x86_clang-r416183b clang
-       #git clone --depth=1 https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9 gcc64
-       #git clone --depth=1 https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_arm_arm-linux-androideabi-4.9 gcc32
-       #echo "${{ github.workspace }}/clang/bin" >> $GITHUB_PATH
-       #echo "${{ github.workspace }}/gcc64/bin" >> $GITHUB_PATH
-       #echo "${{ github.workspace }}/gcc32/bin" >> $GITHUB_PATH
-
-    #- name: Test LineageOS Toolchain
-      #run: |
-       #which clang
-       #clang --version
-       #which aarch64-linux-android-gcc
-       #aarch64-linux-android-gcc --version
-
-
-
-    - name: Setup CCACHE for LineageOS Clang/GCC
-      run: |
-       # Pastikan folder .ccache ada
-       mkdir -p ${{ github.workspace }}/.ccache
-
-       # Set environment variables ccache
-       export CCACHE_DIR=${{ github.workspace }}/.ccache
-       export CCACHE_COMPILERCHECK="%compiler% -dumpmachine; %compiler% -dumpversion"
-       export CCACHE_BASEDIR=${{ github.workspace }}
-       export CCACHE_NOHASHDIR=1
-
-       # Tambahkan ccache ke PATH
-       echo "${{ github.workspace }}/clang/bin" >> $GITHUB_PATH
-       echo "${{ github.workspace }}/gcc64/bin" >> $GITHUB_PATH
-       echo "${{ github.workspace }}/gcc32/bin" >> $GITHUB_PATH
-
-       ## Test compiler
-       #which clang
-       #clang --version
-       #which aarch64-linux-android-gcc
-       #aarch64-linux-android-gcc --version
-
-
+        if [ ! -d ${{ github.workspace }}/anykernel ]; then
+          git clone https://github.com/sudoyottaxbyte/any_kernel.git ${{ github.workspace }}/anykernel
+        fi
+    
 
     - name: Checkout Lindroid DRM Loopback
       uses: actions/checkout@v3
@@ -127,70 +66,16 @@ jobs:
         # Copy source lindroid-drm ke tree kernel
         cp -r ../drm-dkms drivers/lindroid-drm
 
-    - name: Build Kernel GKI 5.10
+    - name: Build Kernel
       run: |
-       cd kernel
-        rm -rf out
-        mkdir out
-        make O=out ARCH=arm64 gs201-stock_defconfig
-       # Fix configs
-       scripts/config --file out/.config --disable IKHEADERS
-       scripts/config --file out/.config --disable IKHEADERS_PROC
-       scripts/config --file out/.config --disable KALLSYMS
-       scripts/config --file out/.config --disable KALLSYMS_ALL
-       # Enable LXC support
-       scripts/config --file out/.config -e NAMESPACES
-       scripts/config --file out/.config -e UTS_NS
-       scripts/config --file out/.config -e IPC_NS
-       scripts/config --file out/.config -e USER_NS
-       scripts/config --file out/.config -e PID_NS
-       scripts/config --file out/.config -e NET_NS
-
-       scripts/config --file out/.config -e CGROUPS
-       scripts/config --file out/.config -e CGROUP_SCHED
-       scripts/config --file out/.config -e CGROUP_FREEZER
-       scripts/config --file out/.config -e CGROUP_DEVICE
-       scripts/config --file out/.config -e CPUSETS
-       scripts/config --file out/.config -e CGROUP_CPUACCT
-       scripts/config --file out/.config -e MEMCG
-       scripts/config --file out/.config -e MEMCG_SWAP
-       scripts/config --file out/.config -e CGROUP_PERF
-       scripts/config --file out/.config -e CGROUP_PIDS
-       scripts/config --file out/.config -e CGROUP_BPF
-
-       scripts/config --file out/.config -e KEYS
-       scripts/config --file out/.config -e SECCOMP
-       scripts/config --file out/.config -e SECCOMP_FILTER
-       scripts/config --file out/.config -e SECURITY
-       scripts/config --file out/.config -e SECURITYFS
-
-       scripts/config --file out/.config -e PROC_FS
-       scripts/config --file out/.config -e SYSFS
-       scripts/config --file out/.config -e TMPFS
-       scripts/config --file out/.config -e TMPFS_POSIX_ACL
-       scripts/config --file out/.config -e DEVPTS_MULTIPLE_INSTANCES
-       scripts/config --file out/.config -e OVERLAY_FS
-
-       scripts/config --file out/.config -e VETH
-       scripts/config --file out/.config -e BRIDGE
-       scripts/config --file out/.config -e NETFILTER
-       scripts/config --file out/.config -e NF_NAT
-       scripts/config --file out/.config -e IP_NF_IPTABLES
-       scripts/config --file out/.config -e IP_NF_TARGET_MASQUERADE
-
-       # Apply config changes
-       make O=out ARCH=arm64 olddefconfig
-
-       # Make modules_prepare
-       make O=out ARCH=arm64 modules_prepare
-
-       # Build with verbose logging
-       PATH=${{ github.workspace }}/clang/bin:${{ github.workspace }}/gcc64/bin:${{ github.workspace }}/gcc32/bin:/usr/bin
-       make -j$(nproc) O=out ARCH=arm64 \
+        cd kernel
+        mkdir -p out
+        make O=out ARCH=arm64 ${{ env.DEFCONFIG }}
+        make -j$(nproc) O=out ARCH=arm64 \
           CC=clang LD=ld.lld AR=llvm-ar AS=llvm-as NM=llvm-nm \
           OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip \
           CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
-          LLVM=1 LLVM_IAS=1 | tee build.log
+          LLVM=1 LLVM_IAS=1 LTO=none CHECKSYSCALLS=n | tee build.log
 
     - name: Verify Lindroid DRM Build
       run: |
@@ -202,16 +87,19 @@ jobs:
           exit 1
         fi    
 
-    - name: Collect Build Outputs
+    - name: Prepare AnyKernel
       run: |
-        mkdir -p artifacts
-        cp kernel/out/arch/arm64/boot/Image.lz4 artifacts/
-        cp kernel/out/arch/arm64/boot/dts/google/*.dtb artifacts/ || true
-        cp kernel/out/arch/arm64/boot/dts/google/*.dtbo artifacts/ || true
-        find kernel/out -name "*.ko" -exec cp {} artifacts/ \;
+        cp kernel/out/arch/arm64/boot/Image.lz4 anykernel/
+        cp kernel/out/arch/arm64/boot/dts/google/dtbo.img anykernel/
 
-    - name: Upload Artifacts
+    - name: Zip Kernel
+      run: |
+        cd anykernel
+        zip -r9 $ZIPNAME *
+        mv $ZIPNAME ${{ github.workspace }}
+
+    - name: Upload Kernel ZIP
       uses: actions/upload-artifact@v4
       with:
-        name: gki-lindroid-build
-        path: artifacts
+        name: kernel-zip
+        path: /home/runner/work/android_kernel_google_gs201/android_kernel_google_gs201/Kernel-A13-GoPix-7-Series-KSu-next.zip
