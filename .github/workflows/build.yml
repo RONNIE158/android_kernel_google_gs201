@@ -69,7 +69,7 @@ jobs:
           CC=clang LD=ld.lld AR=llvm-ar AS=llvm-as NM=llvm-nm \
           OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip \
           CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
-          LLVM=1 LLVM_IAS=1 LTO=none CHECKSYSCALLS=n modules | tee build.log
+          LLVM=1 LLVM_IAS=1 LTO=none CHECKSYSCALLS=n | tee build.log
 
     - name: Verify Lindroid DRM Build
       run: |
