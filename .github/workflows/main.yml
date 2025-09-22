@@ -104,22 +104,22 @@ jobs:
 
 
 
-    #- name: Checkout Lindroid DRM Loopback
-      #uses: actions/checkout@v3
-      #with:
-        #repository: ${{ env.PATCH_REPO }}
-        #path: drm-dkms
+    - name: Checkout Lindroid DRM Loopback
+      uses: actions/checkout@v3
+      with:
+        repository: ${{ env.PATCH_REPO }}
+        path: drm-dkms
 
-    #- name: Patch Kernel for Lindroid DRM
-      #run: |
-        #cd kernel
+    - name: Patch Kernel for Lindroid DRM
+      run: |
+        cd kernel
         # Tambah ke drivers/Makefile
-        #echo 'obj-y += lindroid-drm/' >> drivers/Makefile
+        echo 'obj-y += lindroid-drm/' >> drivers/Makefile
         # Tambah ke drivers/Kconfig
-        #echo 'source "drivers/lindroid-drm/Kconfig"' >> drivers/Kconfig
+        echo 'source "drivers/lindroid-drm/Kconfig"' >> drivers/Kconfig
 
         # Copy source lindroid-drm ke tree kernel
-        #cp -r ../drm-dkms drivers/lindroid-drm
+        cp -r ../drm-dkms drivers/lindroid-drm
 
     - name: Build Kernel GKI 5.10
       run: |
