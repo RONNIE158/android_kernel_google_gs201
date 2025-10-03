@@ -1,39 +1,48 @@
-name: Build GKI Kernel with Lindroid DRM, (berhasil)
+name: Build Kernel GKI with Clang-r547379 + Options
 
 on:
   workflow_dispatch:
+    inputs:
+      build_kernelsu:
+        description: 'Build with KernelSU'
+        required: true
+        default: 'true'
+        type: boolean
+      build_lindroid:
+        description: 'Build with Lindroid DRM'
+        required: true
+        default: 'true'
+        type: boolean
 
 jobs:
-  build-gki:
+  build:
     runs-on: ubuntu-latest
     env:
       DEFCONFIG: gs201_defconfig
       ZIPNAME: Kernel-A13-GoPix-7-Series-KSu-next.zip
       KBUILD_BUILD_USER: "@beluga"
       KBUILD_BUILD_HOST: "Ubuntu-Linux"
-      DEVICE: pantah
-      KERNEL_REPO: RONNIE158/android_kernel_google_gs201
-      KERNEL_BRANCH: 13.0.0-sultan
       PATCH_REPO: Linux-on-droid/lindroid-drm-loopback
+      KERNEL_NAME: kernel
 
     steps:
     - name: Checkout Kernel
       uses: actions/checkout@v3
       with:
-        repository: ${{ env.KERNEL_REPO }}
-        ref: ${{ env.KERNEL_BRANCH }}
-        path: kernel
-  
+        repository: RONNIE158/android_kernel_google_gs201
+        ref: 13.0.0-sultan
+        path: ${{ env.KERNEL_NAME }}
+
     - name: Install dependencies
       run: |
-       sudo apt-get update
-       sudo apt-get install -y bc bison build-essential flex lld \
-         libssl-dev libncurses5-dev libncursesw5-dev \
-         python3 python3-pip rsync zip \
-         binutils-aarch64-linux-gnu binutils-arm-linux-gnueabi \
-         gcc-aarch64-linux-gnu gcc g++ git curl wget unzip \
-         libelf-dev dwarves device-tree-compiler clang llvm lz4 xz-utils zstd     
-    
+        sudo apt-get update
+        sudo apt-get install -y bc bison build-essential flex lld \
+          libssl-dev libncurses5-dev libncursesw5-dev \
+          python3 python3-pip rsync zip \
+          binutils-aarch64-linux-gnu binutils-arm-linux-gnueabi \
+          gcc-aarch64-linux-gnu gcc g++ git curl wget unzip \
+          libelf-dev dwarves device-tree-compiler clang llvm lz4 xz-utils zstd     
+
     - name: Download Clang-r547379
       run: |
         mkdir -p ${{ github.workspace }}/clang-r547379
@@ -47,28 +56,34 @@ jobs:
         if [ ! -d ${{ github.workspace }}/anykernel ]; then
           git clone https://github.com/sudoyottaxbyte/any_kernel.git ${{ github.workspace }}/anykernel
         fi
-    
 
-    - name: Checkout Lindroid DRM Loopback
-      uses: actions/checkout@v3
-      with:
-        repository: ${{ env.PATCH_REPO }}
-        path: drm-dkms
-
-    - name: Patch Kernel for Lindroid DRM
+    - name: Apply Lindroid DRM Patch
+      if: ${{ github.event.inputs.build_lindroid == 'true' }}
       run: |
-        cd kernel
-        # Tambah ke drivers/Makefile
+        cd ${{ env.KERNEL_NAME }}
         echo 'obj-y += lindroid-drm/' >> drivers/Makefile
-        # Tambah ke drivers/Kconfig
         echo 'source "drivers/lindroid-drm/Kconfig"' >> drivers/Kconfig
+        git clone https://github.com/${{ env.PATCH_REPO }} ../drm-dkms
+        cp -r ../drm-dkms drivers/lindroid-drm    
 
-        # Copy source lindroid-drm ke tree kernel
-        cp -r ../drm-dkms drivers/lindroid-drm
+    - name: Setup KernelSU
+      if: ${{ github.event.inputs.build_kernelsu == 'true' }}
+      working-directory: ${{ env.KERNEL_NAME }}
+      run: |
+        # Delete old KernelSU
+        if [ -d "./KernelSU" ]; then rm -rf "./KernelSU"; fi
+        if [ -d "./drivers/kernelsu" ]; then rm -rf "./drivers/kernelsu"; fi
+
+        # Apply new KernelSU patches
+        curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s v0.9.5
+
+        echo -e "CONFIG_KPROBES=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
+        echo -e "CONFIG_HAVE_KPROBES=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
+        echo -e "CONFIG_KPROBE_EVENTS=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
 
     - name: Build Kernel
       run: |
-        cd kernel
+        cd ${{ env.KERNEL_NAME }}
         mkdir -p out
         make O=out ARCH=arm64 ${{ env.DEFCONFIG }}
         make -j$(nproc) O=out ARCH=arm64 \
@@ -77,20 +92,18 @@ jobs:
           CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
           LLVM=1 LLVM_IAS=1 LTO=none CHECKSYSCALLS=n | tee build.log
 
-    - name: Verify Lindroid DRM Build
+    - name: Verify Build
       run: |
-        cd kernel
-        if grep -q "AR      drivers/lindroid-drm/built-in.a" build.log; then
-          echo "✅ Lindroid DRM built successfully"
-        else
-          echo "❌ Lindroid DRM NOT built"
-          exit 1
-        fi    
+        cd ${{ env.KERNEL_NAME }}
+        ok=true
+        if [ "${{ github.event.inputs.build_lindroid }}" == "true" ] && ! grep -q "AR      drivers/lindroid-drm/built-in.a" build.log; then ok=false; fi
+        if [ "${{ github.event.inputs.build_kernelsu }}" == "true" ] && ! grep -q "AR      drivers/kernelsu/built-in.a" build.log; then ok=false; fi
+        if [ "$ok" = true ]; then echo "✅ Build successful"; else echo "❌ Build failed"; exit 1; fi
 
     - name: Prepare AnyKernel
       run: |
-        cp kernel/out/arch/arm64/boot/Image.lz4 anykernel/
-        cp kernel/out/arch/arm64/boot/dts/google/dtbo.img anykernel/
+        cp ${{ env.KERNEL_NAME }}/out/arch/arm64/boot/Image.lz4 anykernel/
+        cp ${{ env.KERNEL_NAME }}/out/arch/arm64/boot/dts/google/dtbo.img anykernel/
 
     - name: Zip Kernel
       run: |
@@ -102,4 +115,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: kernel-zip
-        path: /home/runner/work/android_kernel_google_gs201/android_kernel_google_gs201/Kernel-A13-GoPix-7-Series-KSu-next.zip
+        path: ${{ github.workspace }}/$ZIPNAME
