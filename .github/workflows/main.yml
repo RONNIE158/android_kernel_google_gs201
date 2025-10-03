@@ -13,6 +13,16 @@ on:
         required: true
         default: 'true'
         type: boolean
+      build_lxc:
+        description: 'Enable LXC configs'
+        required: true
+        default: 'false'
+        type: boolean
+      build_docker:
+        description: 'Enable Docker configs'
+        required: true
+        default: 'false'
+        type: boolean
 
 jobs:
   build:
@@ -72,6 +82,50 @@ jobs:
       run: |
         # Apply KernelSU-Next patches
         curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -
+
+    - name: Enable LXC configs
+      if: ${{ github.event.inputs.build_lxc == 'true' }}
+      working-directory: ${{ env.KERNEL_NAME }}
+      run: |
+        echo "⚙️ Enabling LXC configs..."
+        echo "CONFIG_NAMESPACES=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
+        echo "CONFIG_UTS_NS=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
+        echo "CONFIG_IPC_NS=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
+        echo "CONFIG_USER_NS=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
+        echo "CONFIG_PID_NS=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
+        echo "CONFIG_NET_NS=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
+        echo "CONFIG_CHECKPOINT_RESTORE=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
+
+    - name: Enable Docker configs
+      if: ${{ github.event.inputs.build_docker == 'true' }}
+      working-directory: ${{ env.KERNEL_NAME }}
+      run: |
+        echo "⚙️ Enabling Docker configs..."
+        echo "CONFIG_CGROUPS=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
+        echo "CONFIG_CGROUP_FREEZER=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
+        echo "CONFIG_CGROUP_DEVICE=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
+        echo "CONFIG_CGROUP_CPUACCT=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
+        echo "CONFIG_CGROUP_PERF=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
+        echo "CONFIG_CGROUP_SCHED=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
+        echo "CONFIG_CGROUP_BPF=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
+        echo "CONFIG_CGROUP_PIDS=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
+        echo "CONFIG_CPUSETS=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
+        echo "CONFIG_MEMCG=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
+        echo "CONFIG_MEMCG_SWAP=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
+        echo "CONFIG_BLK_CGROUP=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
+        echo "CONFIG_CGROUP_NET_PRIO=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
+        echo "CONFIG_CGROUP_NET_CLASSID=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
+        echo "CONFIG_VETH=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
+        echo "CONFIG_BRIDGE=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
+        echo "CONFIG_NETFILTER=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
+        echo "CONFIG_NF_NAT=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
+        echo "CONFIG_POSIX_MQUEUE=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
+        echo "CONFIG_SECCOMP=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
+        echo "CONFIG_KEYS=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
+        echo "CONFIG_PACKET_DIAG=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
+        echo "CONFIG_UNIX_DIAG=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
+        echo "CONFIG_INET_DIAG=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
+        echo "CONFIG_NETLINK_DIAG=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}    
 
     - name: Build Kernel
       run: |
