@@ -12,8 +12,6 @@ jobs:
       KBUILD_BUILD_USER: "@beluga"
       KBUILD_BUILD_HOST: "Ubuntu-Linux"
       PATCH_REPO: Linux-on-droid/lindroid-drm-loopback
-      ENABLE_KERNELSU: true
-      KERNEL_NAME: kernel
 
     steps:
     - name: Checkout Kernel
@@ -61,26 +59,6 @@ jobs:
 
         # Copy source lindroid-drm ke tree kernel
         cp -r ../drm-dkms drivers/lindroid-drm
-
-    - name: 😋 Setup KernelSU
-      working-directory: ${{ env.KERNEL_NAME }}
-      if: ${{ env.ENABLE_KERNELSU == 'true' }}
-      run: |
-        # Delete old KernelSU
-        if [ -d "./KernelSU" ]; then
-          rm -rf "./KernelSU"
-        fi
-        if [ -d "./drivers/kernelsu" ]; then
-          rm -rf "./drivers/kernelsu"
-        fi
-
-        # Apply new KernelSU patches
-        curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s v0.9.5
-
-        echo -e "CONFIG_KPROBES=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
-        echo -e "CONFIG_HAVE_KPROBES=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
-        echo -e "CONFIG_KPROBE_EVENTS=y" >> arch/arm64/configs/${{ env.DEFCONFIG }}
-    
 
     - name: Build Kernel
       run: |
