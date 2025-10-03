@@ -1,5 +1,6 @@
 CONFIG_LOCALVERSION="-Sultan"
 # tambahkan di defconfig
+# CONFIG_SOC_GOOGLE_ACPM is not set
 # CONFIG_INTEGRATE_MODULES is not set
 # CONFIG_ANDROID_VENDOR_HOOKS is not set
 # CONFIG_LOCALVERSION_AUTO is not set
