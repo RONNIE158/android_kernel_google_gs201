@@ -151,11 +151,6 @@ jobs:
         cp ${{ env.KERNEL_NAME }}/out/arch/arm64/boot/Image.lz4 anykernel/
         cp ${{ env.KERNEL_NAME }}/out/arch/arm64/boot/dts/google/dtbo.img anykernel/
 
-    - name: Prepare AnyKernel
-      run: |
-        cp kernel/out/arch/arm64/boot/Image.lz4 anykernel/
-        cp kernel/out/arch/arm64/boot/dts/google/dtbo.img anykernel/
-
     - name: Zip Kernel
       run: |
         cd anykernel
