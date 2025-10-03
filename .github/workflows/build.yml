@@ -12,6 +12,8 @@ jobs:
       KBUILD_BUILD_USER: "@beluga"
       KBUILD_BUILD_HOST: "Ubuntu-Linux"
       PATCH_REPO: Linux-on-droid/lindroid-drm-loopback
+      KERNELSU_REPO: topjohnwu/KernelSU
+
 
     steps:
     - name: Checkout Kernel
@@ -58,7 +60,20 @@ jobs:
         echo 'source "drivers/lindroid-drm/Kconfig"' >> drivers/Kconfig
 
         # Copy source lindroid-drm ke tree kernel
-        cp -r ../drm-dkms drivers/lindroid-drm    
+        cp -r ../drm-dkms drivers/lindroid-drm
+
+    - name: Checkout KernelSU
+      uses: actions/checkout@v3
+      with:
+        repository: ${{ env.KERNELSU_REPO }}
+        ref: master
+        path: kernel-su
+
+    - name: Apply KernelSU
+      run: |
+        cd kernel
+        echo 'obj-y += ../kernel-su' >> drivers/Makefile
+        echo 'source "../kernel-su/Kconfig"' >> drivers/Kconfig    
 
     - name: Build Kernel
       run: |
