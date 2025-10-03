@@ -151,6 +151,11 @@ jobs:
         cp ${{ env.KERNEL_NAME }}/out/arch/arm64/boot/Image.lz4 anykernel/
         cp ${{ env.KERNEL_NAME }}/out/arch/arm64/boot/dts/google/dtbo.img anykernel/
 
+    - name: Prepare AnyKernel
+      run: |
+        cp kernel/out/arch/arm64/boot/Image.lz4 anykernel/
+        cp kernel/out/arch/arm64/boot/dts/google/dtbo.img anykernel/
+
     - name: Zip Kernel
       run: |
         cd anykernel
@@ -161,4 +166,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: kernel-zip
-        path: ${{ github.workspace }}/$ZIPNAME
+        path: /home/runner/work/android_kernel_google_gs201/android_kernel_google_gs201/Kernel-A13-GoPix-7-Series-KSu-next.zip
